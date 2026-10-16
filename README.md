@@ -1,3 +1,14 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/alexneamtu/serverless-rspack/main/.github/hero.svg" alt="serverless-rspack: compile Lambda functions with Rspack. Cold per-function packaging of 20 functions: webpack 34.6 s, Rspack 9.0 s." width="100%">
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@alexneamtu/serverless-rspack"><img src="https://img.shields.io/npm/v/@alexneamtu/serverless-rspack?color=ff8a3d" alt="npm version"></a>
+  <a href="https://github.com/alexneamtu/serverless-rspack/actions/workflows/ci.yml"><img src="https://github.com/alexneamtu/serverless-rspack/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/@alexneamtu/serverless-rspack" alt="MIT license"></a>
+  <img src="https://img.shields.io/node/v/@alexneamtu/serverless-rspack" alt="Node.js version">
+</p>
+
 # @alexneamtu/serverless-rspack
 
 A Serverless Framework plugin that compiles Node.js Lambda functions with [Rspack](https://rspack.rs) 2.

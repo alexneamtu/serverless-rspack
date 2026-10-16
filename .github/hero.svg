@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="serverless-rspack: compile Serverless Lambda functions with Rspack. Cold per-function packaging, 20 functions: webpack 34.6 s, Rspack 9.0 s.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#141a33"/>
+    </linearGradient>
+    <linearGradient id="fast" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff8a3d"/>
+      <stop offset="1" stop-color="#ffc24b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.2" r="0.6">
+      <stop offset="0" stop-color="#ff8a3d" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="400" rx="20" fill="url(#bg)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#grid)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#glow)"/>
+
+  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="72" y="118" fill="#8b93b8" font-size="22" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">@alexneamtu/</text>
+    <text x="72" y="182" fill="#f4f6ff" font-size="64" font-weight="700" letter-spacing="-1.5">serverless-<tspan fill="url(#fast)">rspack</tspan></text>
+    <text x="74" y="230" fill="#b7bedb" font-size="24">Compile Lambda functions with Rspack.</text>
+    <text x="74" y="262" fill="#b7bedb" font-size="24">Keep serverless-webpack's packaging and deploys.</text>
+    <text x="74" y="330" fill="#6f789e" font-size="16" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">npm i -D @alexneamtu/serverless-rspack @rspack/core</text>
+  </g>
+
+  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="800" y="118" fill="#8b93b8" font-size="15" letter-spacing="1.5">COLD PACKAGE · 20 FUNCTIONS</text>
+    <text x="800" y="164" fill="#b7bedb" font-size="17">webpack</text>
+    <rect x="800" y="174" width="400" height="18" rx="9" fill="#3a4266"/>
+    <text x="1200" y="164" fill="#b7bedb" font-size="17" text-anchor="end">34.6 s</text>
+    <text x="800" y="230" fill="#f4f6ff" font-size="17" font-weight="600">Rspack</text>
+    <rect x="800" y="240" width="104" height="18" rx="9" fill="url(#fast)"/>
+    <text x="1200" y="230" fill="#ffc24b" font-size="17" font-weight="600" text-anchor="end">9.0 s</text>
+    <text x="800" y="316" fill="#f4f6ff" font-size="44" font-weight="700">3.8×</text>
+    <text x="900" y="304" fill="#8b93b8" font-size="15">faster cold builds,</text>
+    <text x="900" y="324" fill="#8b93b8" font-size="15">per-function ZIPs</text>
+  </g>
+</svg>
