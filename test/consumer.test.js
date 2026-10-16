@@ -175,7 +175,9 @@ test('invoke local --watch recompiles with Rspack after a source change', async 
 });
 
 test('serverless offline serves the Rspack-compiled handler', async () => {
-  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', 'serverless-offline@14'], { cwd: consumer, stdio: 'inherit' });
+  // serverless-offline 14 peers on Serverless v4; 13 is the last line for Serverless 3.
+  const offline = FRAMEWORK.startsWith('serverless@3') ? 'serverless-offline@13' : 'serverless-offline@14';
+  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', offline], { cwd: consumer, stdio: 'inherit' });
   const directory = service('javascript');
   const yml = path.join(directory, 'serverless.yml');
   writeFileSync(yml, readFileSync(yml, 'utf8')
@@ -185,7 +187,7 @@ test('serverless offline serves the Rspack-compiled handler', async () => {
   const child = start(directory, ['offline', 'start', '--httpPort', String(httpPort), '--lambdaPort', String(lambdaPort)]);
   try {
     await child.waitFor(/Server ready/);
-    const response = await fetch(`http://127.0.0.1:${httpPort}/hello`);
+    const response = await fetch(`http://localhost:${httpPort}/hello`);
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { message: 'Hello, world' });
   } finally {

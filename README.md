@@ -79,7 +79,7 @@ The suite covers:
 - fresh output after source and asset changes with a warm persistent cache
 - compilation errors failing the command
 - `invoke local --watch` recompiling after a source change
-- `serverless offline` (serverless-offline 14) serving a compiled handler
+- `serverless offline` serving a compiled handler (serverless-offline 13 with Serverless Framework 3, 14 with osls)
 - rejection of unsupported options
 
 Serverless Framework v4 is not in CI because it needs a Serverless access key and real AWS credentials, even for `serverless package`.
