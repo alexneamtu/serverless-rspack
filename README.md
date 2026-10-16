@@ -96,7 +96,6 @@ These fail with an error instead of producing a broken package:
 Other limitations:
 
 - Functions compile one at a time. serverless-webpack's `concurrency` setting is ignored. Watch mode (`serverless offline`, `--watch`) builds all functions together, like serverless-webpack.
-- `run --watch` is untested.
 - The Rspack config is the only build config. Webpack-only plugins and loaders may not work under Rspack.
 - After each function the plugin runs a full garbage collection, using Node's `--expose-gc` flag for the whole process. Without it, Rspack keeps every function's persistent cache in memory (5 GB for the 20-function benchmark).
 - Other runtimes, other providers, Yarn PnP and pnpm are untested.

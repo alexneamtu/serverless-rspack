@@ -87,7 +87,7 @@ class ServerlessRspack extends ServerlessWebpack {
       }
       if (this.progress) this.progress.get('webpack').remove();
     };
-    // wpwatch serves offline; watch serves invoke local --watch and run --watch.
+    // wpwatch serves offline; watch serves invoke local --watch.
     for (const name of ['wpwatch', 'watch']) {
       const parent = this[name];
       this[name] = (...args) => {
