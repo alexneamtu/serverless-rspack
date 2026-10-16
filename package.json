@@ -1,6 +1,6 @@
 {
   "name": "@alexneamtu/serverless-rspack",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Serverless Framework plugin that compiles Node.js functions with Rspack and packages them with serverless-webpack",
   "keywords": [
     "serverless",
