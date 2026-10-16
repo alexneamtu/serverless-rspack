@@ -66,7 +66,7 @@ Every cell below runs the full test suite against the packed npm tarball install
 | | Tested versions |
 | --- | --- |
 | Node.js (build) | 22, 24, 26 (26 run locally only, not in CI) |
-| Framework | osls 3.78.0, osls 4.4.0, Serverless Framework 3.40.0, Serverless Framework 4.44.0 (run locally only, not in CI) |
+| Framework | osls 3.78.0, osls 4.4.0, Serverless Framework 3.40.0, Serverless Framework 4.44.0 (Node 24, Rspack 2.2.9; needs a Serverless access key, so CI skips it without one) |
 | `@rspack/core` | 2.0.0, 2.2.9 |
 | serverless-webpack | 5.16.2 (pinned; the plugin depends on its internals) |
 | Lambda runtime | `nodejs22.x`, `nodejs24.x`: handlers from the extracted ZIPs are invoked in the AWS Lambda base images |
@@ -84,7 +84,7 @@ The suite covers:
 - `serverless offline` serving a compiled handler (serverless-offline 13 with Serverless Framework 3, 14 with osls)
 - rejection of unsupported options
 
-Serverless Framework v4 is not in CI because it needs a Serverless access key and real AWS credentials, even for `serverless package`.
+Serverless Framework v4 calls AWS even for `serverless package`; the tests answer those calls with a local stub, so they need no AWS account.
 
 ## Not supported
 

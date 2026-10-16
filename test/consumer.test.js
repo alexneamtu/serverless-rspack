@@ -12,21 +12,57 @@ const { after, before, test } = require('node:test');
 const RSPACK = process.env.RSPACK_VERSION || '2.2.9';
 const FRAMEWORK = process.env.FRAMEWORK || 'osls@3.78.0';
 const frameworkName = FRAMEWORK.slice(0, FRAMEWORK.lastIndexOf('@'));
+// Serverless v4 needs a Serverless access key (SERVERLESS_ACCESS_KEY) and calls AWS even for `package`.
+const V4 = FRAMEWORK.startsWith('serverless@4');
 const root = path.resolve(__dirname, '..');
 let consumer;
+let fakeAws;
 
-before(() => {
+// Answers v4's two AWS calls during `package`: the account ID lookup, and "stack does not exist".
+// Runs in its own process because the tests block on spawnSync.
+const FAKE_AWS = `require('node:http').createServer((req, res) => {
+  let body = '';
+  req.on('data', (chunk) => { body += chunk; });
+  req.on('end', () => {
+    res.setHeader('content-type', 'text/xml');
+    if (body.includes('Action=GetCallerIdentity')) {
+      return res.end('<GetCallerIdentityResponse><GetCallerIdentityResult><Account>000000000000</Account><Arn>arn:aws:iam::000000000000:user/test</Arn><UserId>TEST</UserId></GetCallerIdentityResult></GetCallerIdentityResponse>');
+    }
+    res.statusCode = 400;
+    res.end('<ErrorResponse><Error><Code>ValidationError</Code><Message>Stack does not exist</Message></Error></ErrorResponse>');
+  });
+}).listen(0, '127.0.0.1', function () { console.log(this.address().port); });`;
+
+const startFakeAws = () => new Promise((resolve) => {
+  fakeAws = spawn(process.execPath, ['-e', FAKE_AWS]);
+  fakeAws.stdout.once('data', (port) => {
+    Object.assign(process.env, { AWS_ENDPOINT_URL: `http://127.0.0.1:${Number(port)}`, AWS_ACCESS_KEY_ID: 'test', AWS_SECRET_ACCESS_KEY: 'test' });
+    delete process.env.AWS_PROFILE;
+    resolve();
+  });
+});
+
+before(async () => {
+  if (V4) await startFakeAws();
   consumer = mkdtempSync(path.join(os.tmpdir(), 'serverless-rspack-consumer-'));
   const tarball = execFileSync('npm', ['pack', '--silent', '--pack-destination', consumer], { cwd: root, encoding: 'utf8' }).trim();
   writeFileSync(path.join(consumer, 'package.json'), '{"private":true}');
   execFileSync('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', path.join(consumer, tarball), `@rspack/core@${RSPACK}`, FRAMEWORK], { cwd: consumer, stdio: 'inherit' });
 });
 
-after(() => rmSync(consumer, { recursive: true, force: true }));
+after(() => {
+  fakeAws?.kill();
+  rmSync(consumer, { recursive: true, force: true });
+});
 
 const service = (example) => {
   const directory = mkdtempSync(path.join(consumer, `${example}-`));
   cpSync(path.join(root, 'examples', example), directory, { recursive: true });
+  // A named bucket stops v4 looking up the stack's bucket with an SDK that ignores AWS_ENDPOINT_URL.
+  if (V4) {
+    const yml = path.join(directory, 'serverless.yml');
+    writeFileSync(yml, readFileSync(yml, 'utf8').replace('  runtime: nodejs22.x', '  runtime: nodejs22.x\n  deploymentBucket:\n    name: test-bucket'));
+  }
   return directory;
 };
 
