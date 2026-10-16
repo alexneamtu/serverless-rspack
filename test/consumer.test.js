@@ -2,8 +2,9 @@
 // packages the examples with a real Serverless CLI. Versions come from the environment
 // so CI can run the compatibility matrix.
 const assert = require('node:assert/strict');
-const { execFileSync, spawnSync } = require('node:child_process');
+const { execFileSync, spawn, spawnSync } = require('node:child_process');
 const { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
+const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const { after, before, test } = require('node:test');
@@ -30,9 +31,7 @@ const service = (example) => {
 };
 
 const serverless = (directory, ...args) => {
-  const pkg = path.join(consumer, 'node_modules', frameworkName);
-  const bin = path.join(pkg, require(path.join(pkg, 'package.json')).bin.serverless);
-  const result = spawnSync(process.execPath, [bin, ...args, '--stage', 'test', '--region', 'us-east-1'], {
+  const result = spawnSync(process.execPath, [serverlessBin(), ...args, '--stage', 'test', '--region', 'us-east-1'], {
     cwd: directory, encoding: 'utf8', timeout: 120_000, env: { ...process.env, SLS_TELEMETRY_DISABLED: '1' },
   });
   return { ...result, output: result.stdout + result.stderr };
@@ -131,11 +130,67 @@ test('invoke local runs the compiled handler', () => {
   assert.match(result.output, /Hello, local/);
 });
 
-test('watch mode is rejected', () => {
+const serverlessBin = () => {
+  const pkg = path.join(consumer, 'node_modules', frameworkName);
+  return path.join(pkg, require(path.join(pkg, 'package.json')).bin.serverless);
+};
+
+// Starts a long-running Serverless command; resolves once its output matches.
+const start = (directory, args) => {
+  const child = spawn(process.execPath, [serverlessBin(), ...args, '--stage', 'test', '--region', 'us-east-1'],
+    { cwd: directory, env: { ...process.env, SLS_TELEMETRY_DISABLED: '1' } });
+  let output = '';
+  child.stdout.on('data', (chunk) => { output += chunk; });
+  child.stderr.on('data', (chunk) => { output += chunk; });
+  child.waitFor = (pattern, timeout = 60_000) => new Promise((resolve, reject) => {
+    const started = Date.now();
+    const poll = setInterval(() => {
+      if (pattern.test(output)) resolve(clearInterval(poll));
+      else if (child.exitCode !== null || Date.now() - started > timeout) {
+        clearInterval(poll);
+        reject(new Error(`Timed out waiting for ${pattern}:\n${output}`));
+      }
+    }, 200);
+  });
+  return child;
+};
+
+const freePort = () => new Promise((resolve) => {
+  const server = net.createServer().listen(0, () => {
+    const { port } = server.address();
+    server.close(() => resolve(port));
+  });
+});
+
+test('invoke local --watch recompiles with Rspack after a source change', async () => {
   const directory = service('javascript');
-  const result = serverless(directory, 'invoke', 'local', '--function', 'hello', '--watch');
-  assert.notEqual(result.status, 0);
-  assert.match(result.output, /watch mode/);
+  const child = start(directory, ['invoke', 'local', '--function', 'hello', '--data', '{"name":"watch"}', '--watch']);
+  try {
+    await child.waitFor(/Hello, watch/);
+    writeFileSync(path.join(directory, 'greeting.js'), "exports.greeting = (name) => `Changed, ${name}`;");
+    await child.waitFor(/Changed, watch/);
+  } finally {
+    child.kill();
+  }
+});
+
+test('serverless offline serves the Rspack-compiled handler', async () => {
+  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', 'serverless-offline@14'], { cwd: consumer, stdio: 'inherit' });
+  const directory = service('javascript');
+  const yml = path.join(directory, 'serverless.yml');
+  writeFileSync(yml, readFileSync(yml, 'utf8')
+    .replace("  - '@alexneamtu/serverless-rspack'", "  - '@alexneamtu/serverless-rspack'\n  - serverless-offline")
+    .replace('handler: handler.hello', 'handler: handler.hello\n    events:\n      - httpApi: GET /hello'));
+  const [httpPort, lambdaPort] = [await freePort(), await freePort()];
+  const child = start(directory, ['offline', 'start', '--httpPort', String(httpPort), '--lambdaPort', String(lambdaPort)]);
+  try {
+    await child.waitFor(/Server ready/);
+    const response = await fetch(`http://127.0.0.1:${httpPort}/hello`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { message: 'Hello, world' });
+  } finally {
+    child.kill();
+  }
 });
 
 // Opt-in: runs extracted ZIPs in an AWS Lambda base image through its Runtime Interface Emulator.

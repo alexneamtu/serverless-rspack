@@ -78,6 +78,8 @@ The suite covers:
 - copied assets
 - fresh output after source and asset changes with a warm persistent cache
 - compilation errors failing the command
+- `invoke local --watch` recompiling after a source change
+- `serverless offline` (serverless-offline 14) serving a compiled handler
 - rejection of unsupported options
 
 Serverless Framework v4 is not in CI because it needs a Serverless access key and real AWS credentials, even for `serverless package`.
@@ -87,12 +89,12 @@ Serverless Framework v4 is not in CI because it needs a Serverless access key an
 These fail with an error instead of producing a broken package:
 
 - `includeModules` other than `false`. External `node_modules` are not packaged, so bundle every dependency. `externals` are not packaged either; use them only for modules the runtime already provides.
-- Watch mode: `serverless offline`, `invoke local --watch`, `run --watch`.
 - `output.library.type` values that are not CommonJS (`commonjs`, `commonjs2`, `commonjs-module`, `commonjs-static`). ESM handlers are not supported.
 
 Other limitations:
 
-- Functions compile one at a time. serverless-webpack's `concurrency` setting is ignored.
+- Functions compile one at a time. serverless-webpack's `concurrency` setting is ignored. Watch mode (`serverless offline`, `--watch`) builds all functions together, like serverless-webpack.
+- `run --watch` is untested.
 - The Rspack config is the only build config. Webpack-only plugins and loaders may not work under Rspack.
 - After each function the plugin runs a full garbage collection, using Node's `--expose-gc` flag for the whole process. Without it, Rspack keeps every function's persistent cache in memory (5 GB for the 20-function benchmark).
 - Other runtimes, other providers, Yarn PnP and pnpm are untested.
