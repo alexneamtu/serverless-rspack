@@ -12,7 +12,7 @@ const webpackPath = require.resolve('webpack', { paths: [path.dirname(require.re
 require.cache[webpackPath] = { id: webpackPath, filename: webpackPath, loaded: true, exports: rspack };
 const ServerlessWebpack = require('serverless-webpack');
 
-// Lambda loads .js handlers with require(), so only CommonJS library types expose them.
+// Library types whose .js output Lambda's require() can load.
 const COMMONJS_LIBRARY_TYPES = new Set(['commonjs', 'commonjs2', 'commonjs-module', 'commonjs-static']);
 
 // Rspack frees a compiler's native memory, including its loaded persistent cache, only when V8
@@ -60,8 +60,11 @@ class ServerlessRspack extends ServerlessWebpack {
       const { libraryTarget, ...output } = original.output;
       // commonjs-static also exposes named exports to import(), which Serverless v4 invoke local uses.
       const type = output.library?.type ?? (!libraryTarget || libraryTarget === 'commonjs' ? 'commonjs-static' : libraryTarget);
-      if (!COMMONJS_LIBRARY_TYPES.has(type)) {
-        fail(`serverless-rspack: output.library.type "${type}" is unsupported; Lambda handlers need a CommonJS type.`);
+      if (type === 'module') {
+        // Lambda loads .js as CommonJS unless a package.json says otherwise; .mjs is always ESM.
+        if (!String(output.filename).endsWith('.mjs')) fail('serverless-rspack: ESM output needs output.filename ending in .mjs.');
+      } else if (!COMMONJS_LIBRARY_TYPES.has(type)) {
+        fail(`serverless-rspack: output.library.type "${type}" is unsupported; use a CommonJS type or "module".`);
       }
       const config = { ...original, output: { ...output, library: { ...output.library, type } } };
       if (config.cache?.type === 'persistent') config.cache = { ...config.cache, name: path.basename(output.path) };

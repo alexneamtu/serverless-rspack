@@ -78,6 +78,7 @@ The suite covers:
 - copied assets
 - fresh output after source and asset changes with a warm persistent cache
 - compilation errors failing the command
+- ESM handlers: `output: { module: true, library: { type: 'module' }, filename: '[name].mjs' }`, also run in the Lambda images
 - `includeModules: true` packaging an external dependency listed in `package.json` into the ZIP, without Node built-ins
 - `invoke local --watch` recompiling after a source change
 - `serverless offline` serving a compiled handler (serverless-offline 13 with Serverless Framework 3, 14 with osls)
@@ -89,7 +90,8 @@ Serverless Framework v4 is not in CI because it needs a Serverless access key an
 
 These fail with an error instead of producing a broken package:
 
-- `output.library.type` values that are not CommonJS (`commonjs`, `commonjs2`, `commonjs-module`, `commonjs-static`). ESM handlers are not supported.
+- `output.library.type` values other than CommonJS (`commonjs`, `commonjs2`, `commonjs-module`, `commonjs-static`) or `module`.
+- ESM output (`library.type: 'module'`) whose `output.filename` does not end in `.mjs`. Lambda loads `.js` files as CommonJS.
 
 Other limitations:
 

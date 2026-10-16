@@ -116,13 +116,29 @@ test('includeModules packages external dependencies into the ZIP', () => {
   assert.deepEqual(invoke(taskRoot, 'handler.hello'), { odd: true, fs: 'function' });
 });
 
-test('non-CommonJS output library types are rejected', () => {
+test('ESM output packages an importable .mjs handler', () => {
   const directory = service('javascript');
   cpSync(path.join(directory, 'rspack.config.js'), path.join(directory, 'base.rspack.config.js'));
-  config(directory, `{ output: { library: { type: 'module' }, path: require('node:path').join(__dirname, '.webpack'), filename: '[name].js' } }`);
-  const result = serverless(directory, 'package');
-  assert.notEqual(result.status, 0);
-  assert.match(result.output, /CommonJS/);
+  config(directory, `{ output: { module: true, library: { type: 'module' }, path: require('node:path').join(__dirname, '.webpack'), filename: '[name].mjs' } }`);
+  packageService(directory);
+  const taskRoot = unzip(directory, 'rspack-javascript.zip');
+  const imported = execFileSync(process.execPath, ['--input-type=module', '-e',
+    `const { hello } = await import(${JSON.stringify(path.join(taskRoot, 'handler.mjs'))}); console.log(JSON.stringify(await hello({})))`], { encoding: 'utf8' });
+  assert.deepEqual(JSON.parse(imported), { message: 'Hello, world' });
+});
+
+test('ESM output with a .js filename and non-CommonJS types are rejected', () => {
+  for (const [output, message] of [
+    [`{ module: true, library: { type: 'module' }, filename: '[name].js' }`, /\.mjs/],
+    [`{ library: { type: 'umd' }, filename: '[name].js' }`, /CommonJS/],
+  ]) {
+    const directory = service('javascript');
+    cpSync(path.join(directory, 'rspack.config.js'), path.join(directory, 'base.rspack.config.js'));
+    config(directory, `{ output: { ...${output}, path: require('node:path').join(__dirname, '.webpack') } }`);
+    const result = serverless(directory, 'package');
+    assert.notEqual(result.status, 0);
+    assert.match(result.output, message);
+  }
 });
 
 test('legacy output.libraryTarget is translated for Rspack', () => {
@@ -208,11 +224,15 @@ test('serverless offline serves the Rspack-compiled handler', async () => {
 test('handlers run in the AWS Lambda Node.js image', { skip: !process.env.LAMBDA_IMAGE }, async () => {
   const directory = service('typescript');
   packageService(directory);
-  for (const [zip, handler, expected] of [
-    ['hello.zip', 'src/hello.handler', { message: 'Hello from an asset' }],
-    ['counter.zip', 'src/counter.handler', { count: 3 }],
+  const esm = service('javascript');
+  cpSync(path.join(esm, 'rspack.config.js'), path.join(esm, 'base.rspack.config.js'));
+  config(esm, `{ output: { module: true, library: { type: 'module' }, path: require('node:path').join(__dirname, '.webpack'), filename: '[name].mjs' } }`);
+  packageService(esm);
+  for (const [taskRoot, handler, expected] of [
+    [unzip(directory, 'hello.zip'), 'src/hello.handler', { message: 'Hello from an asset' }],
+    [unzip(directory, 'counter.zip'), 'src/counter.handler', { count: 3 }],
+    [unzip(esm, 'rspack-javascript.zip'), 'handler.hello', { message: 'Hello, world' }],
   ]) {
-    const taskRoot = unzip(directory, zip);
     const container = execFileSync('docker', ['run', '-d', '--rm', '-p', '127.0.0.1::8080',
       '-v', `${taskRoot}:/var/task:ro`, process.env.LAMBDA_IMAGE, handler], { encoding: 'utf8' }).trim();
     try {
