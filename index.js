@@ -1,5 +1,6 @@
 'use strict';
 
+const { isBuiltin } = require('node:module');
 const path = require('node:path');
 const v8 = require('node:v8');
 const vm = require('node:vm');
@@ -21,7 +22,7 @@ const COMMONJS_LIBRARY_TYPES = new Set(['commonjs', 'commonjs2', 'commonjs-modul
 v8.setFlagsFromString('--expose-gc');
 const gc = vm.runInNewContext('gc');
 
-// Returns messages, not stats: stats reference the compiler and would keep it alive.
+// Returns plain data, not stats: stats reference the compiler and would keep it alive.
 const build = (config) => {
   const compiler = rspack(config);
   return new Promise((resolve, reject) => {
@@ -32,6 +33,11 @@ const build = (config) => {
         if (error || closeError) return reject(error || closeError);
         if (!stats) return reject(new Error('Rspack returned no build result'));
         return resolve({
+          // Package names of non-built-in externals: 'external commonjs "@scope/pkg/sub"' -> '@scope/pkg'.
+          externals: [...new Set(stats.toJson({ all: false, modules: true }).modules.flatMap(({ identifier }) => {
+            const request = /^external .*"(.*)"$/.exec(identifier)?.[1];
+            return request && !isBuiltin(request) ? [request.split('/').slice(0, request.startsWith('@') ? 2 : 1).join('/')] : [];
+          }))],
           errors: stats.hasErrors() && stats.toString({ all: false, errors: true }),
           warnings: stats.hasWarnings() && stats.toString({ all: false, warnings: true }),
         });
@@ -41,7 +47,7 @@ const build = (config) => {
 };
 
 // Reuses serverless-webpack's entry discovery, ZIP packaging and artifact hooks.
-// Only compilation changes; dependencies must be bundled (includeModules: false).
+// Only compilation changes.
 class ServerlessRspack extends ServerlessWebpack {
   constructor(...args) {
     super(...args);
@@ -66,18 +72,15 @@ class ServerlessRspack extends ServerlessWebpack {
     };
     // The parent assigns its methods on the instance, so override after super().
     this.compile = async () => {
-      if (this.configuration.includeModules) {
-        fail('serverless-rspack requires custom.webpack.includeModules: false; bundle dependencies instead.');
-      }
       normalize();
       this.compileStats = { stats: [] };
       const configs = [].concat(this.webpackConfig);
       for (const [index, config] of configs.entries()) {
         this.serverless.cli.log(`Rspack: compiling ${path.basename(config.output.path)} (${index + 1}/${configs.length})`);
-        const { errors, warnings } = await build(config).finally(gc);
+        const { externals, errors, warnings } = await build(config).finally(gc);
         if (errors) fail(errors);
         if (warnings) this.serverless.cli.log(warnings);
-        this.compileStats.stats.push({ outputPath: config.output.path, externalModules: [] });
+        this.compileStats.stats.push({ outputPath: config.output.path, externalModules: externals.map((external) => ({ external })) });
       }
       if (this.progress) this.progress.get('webpack').remove();
     };

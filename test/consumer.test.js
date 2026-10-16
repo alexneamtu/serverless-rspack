@@ -98,13 +98,22 @@ test('compilation errors fail packaging with the Rspack message', () => {
   assert.equal(existsSync(path.join(directory, '.serverless/counter.zip')), false);
 });
 
-test('includeModules is rejected', () => {
+test('includeModules packages external dependencies into the ZIP', () => {
   const directory = service('javascript');
   const yml = path.join(directory, 'serverless.yml');
   writeFileSync(yml, readFileSync(yml, 'utf8').replace('includeModules: false', 'includeModules: true'));
-  const result = serverless(directory, 'package');
-  assert.notEqual(result.status, 0);
-  assert.match(result.output, /includeModules: false/);
+  writeFileSync(path.join(directory, 'package.json'), JSON.stringify({ private: true, dependencies: { 'is-odd': '3.0.1' } }));
+  execFileSync('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], { cwd: directory, stdio: 'inherit' });
+  writeFileSync(path.join(directory, 'handler.js'),
+    "const isOdd = require('is-odd'); const { existsSync } = require('node:fs');\n" +
+    "exports.hello = async () => ({ odd: isOdd(3), fs: typeof existsSync });");
+  cpSync(path.join(directory, 'rspack.config.js'), path.join(directory, 'base.rspack.config.js'));
+  config(directory, "{ externals: ['is-odd', 'node:fs'] }");
+  packageService(directory);
+  const taskRoot = unzip(directory, 'rspack-javascript.zip');
+  assert.equal(existsSync(path.join(taskRoot, 'node_modules/is-odd/package.json')), true);
+  assert.equal(existsSync(path.join(taskRoot, 'node_modules/fs')), false);
+  assert.deepEqual(invoke(taskRoot, 'handler.hello'), { odd: true, fs: 'function' });
 });
 
 test('non-CommonJS output library types are rejected', () => {

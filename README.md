@@ -34,7 +34,7 @@ plugins:
 custom:
   webpack:
     webpackConfig: rspack.config.js
-    includeModules: false # required
+    includeModules: false
 ```
 
 `rspack.config.js`:
@@ -78,6 +78,7 @@ The suite covers:
 - copied assets
 - fresh output after source and asset changes with a warm persistent cache
 - compilation errors failing the command
+- `includeModules: true` packaging an external dependency listed in `package.json` into the ZIP, without Node built-ins
 - `invoke local --watch` recompiling after a source change
 - `serverless offline` serving a compiled handler (serverless-offline 13 with Serverless Framework 3, 14 with osls)
 - rejection of unsupported options
@@ -88,7 +89,6 @@ Serverless Framework v4 is not in CI because it needs a Serverless access key an
 
 These fail with an error instead of producing a broken package:
 
-- `includeModules` other than `false`. External `node_modules` are not packaged, so bundle every dependency. `externals` are not packaged either; use them only for modules the runtime already provides.
 - `output.library.type` values that are not CommonJS (`commonjs`, `commonjs2`, `commonjs-module`, `commonjs-static`). ESM handlers are not supported.
 
 Other limitations:
