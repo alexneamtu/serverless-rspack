@@ -1,8 +1,14 @@
 {
   "name": "@alexneamtu/serverless-rspack",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Serverless Framework plugin that compiles Node.js functions with Rspack and packages them with serverless-webpack",
-  "keywords": ["serverless", "serverless-plugin", "rspack", "aws-lambda", "serverless-webpack"],
+  "keywords": [
+    "serverless",
+    "serverless-plugin",
+    "rspack",
+    "aws-lambda",
+    "serverless-webpack"
+  ],
   "homepage": "https://github.com/alexneamtu/serverless-rspack#readme",
   "bugs": "https://github.com/alexneamtu/serverless-rspack/issues",
   "repository": {
@@ -12,7 +18,9 @@
   "license": "MIT",
   "author": "Alex Neamtu",
   "main": "index.js",
-  "files": ["index.js"],
+  "files": [
+    "index.js"
+  ],
   "scripts": {
     "test": "node --test --test-concurrency=1 test/*.test.js"
   },

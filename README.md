@@ -50,7 +50,7 @@ module.exports = {
 
 `lib` is serverless-webpack's `slsw.lib`: `lib.entries` lists the function handlers and `lib.webpack.isLocal` reports local invocation.
 
-The plugin sets `output.library.type` to `commonjs` when it is unset. A legacy `output.libraryTarget` is converted to it. If you set `output` yourself, include `path` and `filename`, because serverless-webpack only fills in its defaults when `output` is missing.
+The plugin sets `output.library.type` to `commonjs-static` when it is unset, so handlers load with both `require()` and `import()` (Serverless v4 `invoke local` uses `import()`). A legacy `output.libraryTarget` is converted to `output.library.type`, with `commonjs` becoming `commonjs-static`. If you set `output` yourself, include `path` and `filename`, because serverless-webpack only fills in its defaults when `output` is missing.
 
 Complete examples:
 
@@ -66,7 +66,7 @@ Every cell below runs the full test suite against the packed npm tarball install
 | | Tested versions |
 | --- | --- |
 | Node.js (build) | 22, 24, 26 (26 run locally only, not in CI) |
-| Framework | osls 3.78.0, osls 4.4.0, Serverless Framework 3.40.0 |
+| Framework | osls 3.78.0, osls 4.4.0, Serverless Framework 3.40.0, Serverless Framework 4.44.0 (run locally only, not in CI) |
 | `@rspack/core` | 2.0.0, 2.2.9 |
 | serverless-webpack | 5.16.2 (pinned; the plugin depends on its internals) |
 | Lambda runtime | `nodejs22.x`, `nodejs24.x`: handlers from the extracted ZIPs are invoked in the AWS Lambda base images |
@@ -80,7 +80,7 @@ The suite covers:
 - compilation errors failing the command
 - rejection of unsupported options
 
-Serverless Framework v4 is untested because it needs a license key to run.
+Serverless Framework v4 is not in CI because it needs a Serverless access key and real AWS credentials, even for `serverless package`.
 
 ## Not supported
 

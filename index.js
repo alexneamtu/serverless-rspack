@@ -54,7 +54,8 @@ class ServerlessRspack extends ServerlessWebpack {
         // serverless-webpack defaults to output.libraryTarget, which Rspack 2 ignores, leaving
         // bundles without exports. Rspack only honours output.library.type.
         const { libraryTarget, ...output } = original.output;
-        const type = output.library?.type ?? libraryTarget ?? 'commonjs';
+        // commonjs-static also exposes named exports to import(), which Serverless v4 invoke local uses.
+        const type = output.library?.type ?? (!libraryTarget || libraryTarget === 'commonjs' ? 'commonjs-static' : libraryTarget);
         if (!COMMONJS_LIBRARY_TYPES.has(type)) {
           fail(`serverless-rspack: output.library.type "${type}" is unsupported; Lambda handlers need a CommonJS type.`);
         }

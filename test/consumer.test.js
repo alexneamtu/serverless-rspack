@@ -68,6 +68,10 @@ test('minimal JavaScript config packages a callable handler in one service ZIP',
   assert.match(result.output, /Rspack: compiling/);
   const taskRoot = unzip(directory, 'rspack-javascript.zip');
   assert.deepEqual(invoke(taskRoot, 'handler.hello', { name: 'Rspack' }), { message: 'Hello, Rspack' });
+  // Serverless v4 invoke local loads handlers with import(), which needs statically named exports.
+  const imported = execFileSync(process.execPath, ['--input-type=module', '-e',
+    `const { hello } = await import(${JSON.stringify(path.join(taskRoot, 'handler.js'))}); console.log(JSON.stringify(await hello({ name: 'ESM' })))`], { encoding: 'utf8' });
+  assert.deepEqual(JSON.parse(imported), { message: 'Hello, ESM' });
   const template = JSON.parse(readFileSync(path.join(directory, '.serverless/cloudformation-template-update-stack.json')));
   assert.equal(template.Resources.HelloLambdaFunction.Properties.Handler, 'handler.hello');
 });
