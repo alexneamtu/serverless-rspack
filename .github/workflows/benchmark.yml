@@ -1,0 +1,25 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        default: '5'
+      functions:
+        default: '20'
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node bench/run.js "$RUNS" "$FUNCTIONS" | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          RUNS: ${{ inputs.runs }}
+          FUNCTIONS: ${{ inputs.functions }}

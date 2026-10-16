@@ -1,0 +1,22 @@
+service: rspack-typescript
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+
+package:
+  individually: true
+
+plugins:
+  - '@alexneamtu/serverless-rspack'
+
+custom:
+  webpack:
+    webpackConfig: rspack.config.js
+    includeModules: false
+
+functions:
+  hello:
+    handler: src/hello.handler
+  counter:
+    handler: src/counter.handler

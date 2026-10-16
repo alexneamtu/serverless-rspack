@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    name: Node ${{ matrix.node }} · ${{ matrix.framework }} · Rspack ${{ matrix.rspack }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+        framework: [osls@3.78.0, osls@4.4.0, serverless@3.40.0]
+        rspack: [2.0.0, 2.2.9]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+        env:
+          FRAMEWORK: ${{ matrix.framework }}
+          RSPACK_VERSION: ${{ matrix.rspack }}
+
+  lambda:
+    name: Lambda nodejs${{ matrix.runtime }}.x image
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.runtime }}
+      - run: npm test
+        env:
+          LAMBDA_IMAGE: public.ecr.aws/lambda/nodejs:${{ matrix.runtime }}
